@@ -1,0 +1,6 @@
+2014-09-14T05:15:48.475Z INFO Fetching jar file.
+2014-09-14T05:16:02.411Z INFO Working dir /mnt/var/lib/hadoop/steps/2
+2014-09-14T05:16:02.411Z INFO Executing /usr/java/latest/bin/java -cp /home/hadoop/conf:/usr/java/latest/lib/tools.jar:/home/hadoop:/home/hadoop/hadoop-tools.jar:/home/hadoop/hadoop-tools-1.0.3.jar:/home/hadoop/hadoop-core-1.0.3.jar:/home/hadoop/hadoop-core.jar:/home/hadoop/lib/*:/home/hadoop/lib/jetty-ext/* -Xmx1000m -Dhadoop.log.dir=/mnt/var/log/hadoop/steps/2 -Dhadoop.log.file=syslog -Dhadoop.home.dir=/home/hadoop -Dhadoop.id.str=hadoop -Dhadoop.root.logger=INFO,DRFA -Djava.io.tmpdir=/mnt/var/lib/hadoop/steps/2/tmp -Djava.library.path=/home/hadoop/native/Linux-amd64-64 org.apache.hadoop.util.RunJar /mnt/var/lib/hadoop/steps/2/wordcount.jar s3://arpitm-cs6240/Assignment-1/hw1.txt s3://arpitm-cs6240/Assignment-1/hw1-output-3-instances
+2014-09-14T05:28:28.414Z INFO Execution ended with ret val 0
+2014-09-14T05:28:35.515Z INFO Step created jobs: job_201409140513_0001
+2014-09-14T05:28:42.581Z INFO Step succeeded
