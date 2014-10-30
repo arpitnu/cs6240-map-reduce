@@ -25,6 +25,11 @@ public class FlightData {
 	private int flightYear;
 
 	/**
+	 * The unique carrier
+	 */
+	private String airlineCarrier;
+
+	/**
 	 * The origin code
 	 */
 	private String origin;
@@ -73,20 +78,22 @@ public class FlightData {
 		setDepTime(new String());
 		setArrTime(new String());
 		setArrDelay(new String());
+		setAirlineCarrier(new String());
 	}
 
 	@Override
 	public String toString() {
 		String str = null;
 
-		str = "Flight Data: [" + "flightYear = " + flightYear
-				+ ", flightMonth = " + flightMonth + ", flightDate: "
-				+ flightDate + ", origin = " + origin + ", destination = "
-				+ destination + ", departureTime = " + depTime
-				+ ", arrivalTime = " + arrTime + ", arrDelayMinutes = "
-				+ arrDelay + ", isCancelled = "
-				+ ((isCancelled == false) ? "no" : "yes") + ", isDiverted = "
-				+ ((isDiverted == false) ? "no" : "yes") + "]";
+		str = "Flight Data: [" + "airlineCarrier = " + airlineCarrier +"flightYear = "
+				+ flightYear + ", flightMonth = " + flightMonth
+				+ ", flightDate: " + flightDate + ", origin = " + origin
+				+ ", destination = " + destination + ", departureTime = "
+				+ depTime + ", arrivalTime = " + arrTime
+				+ ", arrDelayMinutes = " + arrDelay + ", isCancelled = "
+				+ ((isCancelled == false) ? "false" : "true")
+				+ ", isDiverted = "
+				+ ((isDiverted == false) ? "false" : "true") + "]";
 
 		return str;
 	}
@@ -172,6 +179,14 @@ public class FlightData {
 
 	public void setArrDelay(String arrDelay) {
 		this.arrDelay = arrDelay;
+	}
+
+	public String getAirlineCarrier() {
+		return airlineCarrier;
+	}
+
+	public void setAirlineCarrier(String airlineCarrier) {
+		this.airlineCarrier = airlineCarrier;
 	}
 
 }

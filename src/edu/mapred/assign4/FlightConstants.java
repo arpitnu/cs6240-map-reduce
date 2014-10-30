@@ -12,6 +12,7 @@ public class FlightConstants {
 	/**
 	 * Number of reduce tasks
 	 */
+	//TODO
 	public static final int NUM_REDUCE_TASKS = 12;
 
 	/**
@@ -55,6 +56,7 @@ public class FlightConstants {
 	public static final int INDEX_FLIGHT_YEAR = 0;
 	public static final int INDEX_FLIGHT_MONTH = 2;
 	public static final int INDEX_FLIGHT_DATE = 5;
+	public static final int INDEX_UNIQUE_CARRIER = 6;
 	public static final int INDEX_ORIGIN = 11;
 	public static final int INDEX_DESTINATION = 17;
 	public static final int INDEX_DEP_TIME = 24;
@@ -64,8 +66,19 @@ public class FlightConstants {
 	public static final int INDEX_DIVERTED = 43;
 	
 	/**
+	 * First flight descriptor
+	 */
+	public static final String FIRST_FLIGHT = "F1";
+	
+	/**
+	 * Second flight descriptor
+	 */
+	public static final String SECOND_FLIGHT = "F2";
+	
+	/**
 	 * Enum for global counters to calculate average flight delay
 	 */
+	//TODO
 	public enum AverageFlightDelayCounters {
 		DELAY_SUM,
 		FREQUENCY

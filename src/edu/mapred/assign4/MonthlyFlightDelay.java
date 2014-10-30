@@ -3,9 +3,13 @@ package edu.mapred.assign4;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import org.apache.commons.collections.comparators.ComparableComparator;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.examples.SecondarySort.IntPair.Comparator;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.WritableComparable;
+import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Partitioner;
@@ -20,10 +24,10 @@ import org.apache.hadoop.util.GenericOptionsParser;
  *         AverageFlightDelay Class
  * 
  */
-public class AverageFlightDelay {
+public class MonthlyFlightDelay {
 
 	public static class FlightDataMapper extends
-			Mapper<Object, Text, Text, Text> {
+			Mapper<Object, Text, FlightDataKey, Text> {
 		// FlightDataParser object
 		private FlightDataParser dataParser;
 
@@ -43,27 +47,27 @@ public class AverageFlightDelay {
 			// Verify if flight is valid
 			if (FlightUtils.isValidFlight(fData)) {
 				// Define the key
-				// FlightDataMapperKey outKey = null;
-				Text outKey = null;
+				FlightDataKey outKey = null;
 
 				// Define Value
 				Text outValue = null;
 
 				if (FlightUtils.isFirstFlight(fData)) {
 					outKey = createKey(fData.getDestination(),
-							fData.getFlightDate());
+							fData.getFlightDate(), fData.getAirlineCarrier());
 
-					outValue = createValue("F", fData.getArrTime(),
-							fData.getArrDelay());
+					outValue = createValue(FlightConstants.FIRST_FLIGHT,
+							fData.getArrTime(), fData.getArrDelay());
 				} else if (FlightUtils.isSecondFlight(fData)) {
-					outKey = createKey(fData.getOrigin(), fData.getFlightDate());
+					outKey = createKey(fData.getDestination(),
+							fData.getFlightDate(), fData.getAirlineCarrier());
 
-					outValue = createValue("S", fData.getDepTime(),
-							fData.getArrDelay());
+					outValue = createValue(FlightConstants.SECOND_FLIGHT,
+							fData.getDepTime(), fData.getArrDelay());
 				}
 
 				// TODO For testing
-				// System.out.println(outKey + " ---> " + outValue);
+				// System.out.println(outKey.toString() + " ---> " + outValue);
 
 				// Emit
 				if ((outKey != null) && (outValue != null)) {
@@ -94,27 +98,18 @@ public class AverageFlightDelay {
 			return returnValue;
 		}
 
-		/**
-		 * Function return an output value for the mapper
-		 * 
-		 * @param dest
-		 * @param date
-		 * @return
-		 */
-		private Text createKey(String dest, String date) {
-			Text returnKey = null;
-			if (!isNullString(dest) && !isNullString(date)) {
-				returnKey = new Text(dest.trim() + date.trim());
+		private FlightDataKey createKey(String dest, String date,
+				String airlineId) {
+			FlightDataKey returnKey = null;
+
+			if (!isNullString(dest) && !isNullString(date)
+					&& !isNullString(airlineId)) {
+				returnKey = new FlightDataKey(new Text(dest), new Text(date),
+						new Text(airlineId));
 			}
 			return returnKey;
 		}
 
-		/**
-		 * Function checks if a string is null
-		 * 
-		 * @param str
-		 * @return boolean
-		 */
 		private boolean isNullString(String str) {
 			if ((str == null) || (str.trim().length() == 0)) {
 				return true;
@@ -136,7 +131,7 @@ public class AverageFlightDelay {
 		}
 
 		/*
-		 * Get & set methods
+		 * Get & set methods for data parser.
 		 */
 		public FlightDataParser getParser() {
 			return dataParser;
@@ -158,17 +153,40 @@ public class AverageFlightDelay {
 	 * @author arpitm
 	 * 
 	 */
-	public static class FlightDataPartitioner extends Partitioner<Text, Text> {
+	public static class FlightDataPartitioner extends
+			Partitioner<FlightDataKey, Text> {
 
 		@Override
-		public int getPartition(Text key, Text value, int numPartitions) {
+		public int getPartition(FlightDataKey key, Text value, int numPartitions) {
+			int partitionNum = 0;
+			String uniqueCarrier = key.toString().split(" ")[1];
 			
-			String[] keyParts = key.toString().split("-");
-			int month = Integer.parseInt(keyParts[1]);
-			return (month - 1);
+			//TODO Refine 
+			partitionNum = uniqueCarrier.hashCode();
 
-//			return ((key.toString().hashCode() * 127) % numPartitions);
+			// TODO
+			System.out.println("Partition of " + uniqueCarrier + " ---> " + partitionNum);
+
+			return partitionNum;
 		}
+	}
+
+	public static class FlightDataGroupComparator extends WritableComparator {
+
+		protected FlightDataGroupComparator() {
+			super(FlightDataKey.class, false);			
+		}
+		
+		@Override
+		public int compare(Object a, Object b) {
+			FlightDataKey k1 = (FlightDataKey) a;
+			FlightDataKey k2 = (FlightDataKey) b;
+			
+			int cmpResult = k1.compareTo(k2);
+			
+			return cmpResult;
+		}
+
 	}
 
 	/**
@@ -182,7 +200,7 @@ public class AverageFlightDelay {
 	 * 
 	 */
 	public static class FlightDataReducer extends
-			Reducer<Text, Text, Text, Text> {
+			Reducer<FlightDataKey, Text, Text, Text> {
 		// List to store all flights in first leg
 		private ArrayList<Text> lstFirstFlights = null;
 
@@ -197,8 +215,8 @@ public class AverageFlightDelay {
 			lstSecondFlights = new ArrayList<Text>();
 		}
 
-		public void reduce(Text key, Iterable<Text> values, Context context)
-				throws IOException, InterruptedException,
+		public void reduce(FlightDataKey key, Iterable<Text> values,
+				Context context) throws IOException, InterruptedException,
 				IndexOutOfBoundsException {
 			// Clear lists
 			lstFirstFlights.clear();
@@ -323,10 +341,9 @@ public class AverageFlightDelay {
 			System.exit(1);
 		}
 
-		// Job: Average Flight Delay Calculation.
+		// Job: Monthly Average Flight Delay Calculation.
 		Job job = new Job(conf, "Average Flight Delay Calculation.");
-		// job.getConfiguration().set("join.type", joinType);
-		job.setJarByClass(AverageFlightDelay.class);
+		job.setJarByClass(MonthlyFlightDelay.class);
 		job.setMapperClass(FlightDataMapper.class);
 		job.setPartitionerClass(FlightDataPartitioner.class);
 		job.setReducerClass(FlightDataReducer.class);

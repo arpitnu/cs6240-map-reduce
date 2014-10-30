@@ -17,9 +17,9 @@ public class FlightUtils {
 	public static boolean isValidFlight(FlightData fData) {
 		boolean isValid = false;
 
-		isValid = (isMonthAndYearValid(fData)
-				&& isOriginOrDestinationValid(fData) && !(fData.isCancelled() && fData
-				.isDiverted()));
+		isValid = (isMonthAndYearValid(fData) && 
+				isOriginOrDestinationValid(fData) && 
+				!(fData.isCancelled() && fData.isDiverted()));
 
 		return isValid;
 	}
@@ -69,7 +69,7 @@ public class FlightUtils {
 	private static boolean isOriginOrDestinationValid(FlightData fData) {
 		boolean isValid = false;
 		
-		isValid = (isFirstFlight(fData) || isSecondFlight(fData));
+		isValid = (isFirstFlight(fData) ^ isSecondFlight(fData));
 
 		return isValid;
 	}

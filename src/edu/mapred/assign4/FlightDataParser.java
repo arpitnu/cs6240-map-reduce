@@ -80,6 +80,7 @@ public class FlightDataParser {
 				.equals("0.00")) ? false : true);
 		fData.setDiverted((values[FlightConstants.INDEX_DIVERTED].trim()
 				.equals("0.00")) ? false : true);
+		fData.setAirlineCarrier(values[FlightConstants.INDEX_UNIQUE_CARRIER].trim());
 
 		return fData;
 	}
