@@ -1,4 +1,4 @@
-package edu.mapred.assign4;
+package edu.mapred.assign4.java;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -80,7 +80,7 @@ public class FlightDataParser {
 				.equals("0.00")) ? false : true);
 		fData.setDiverted((values[FlightConstants.INDEX_DIVERTED].trim()
 				.equals("0.00")) ? false : true);
-		fData.setAirlineCarrier(values[FlightConstants.INDEX_UNIQUE_CARRIER].trim());
+		fData.setAirlineId(values[FlightConstants.INDEX_UNIQUE_CARRIER].trim());
 
 		return fData;
 	}

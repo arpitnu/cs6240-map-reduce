@@ -1,4 +1,4 @@
-package edu.mapred.assign4;
+package edu.mapred.assign4.java;
 
 /**
  * @author arpitm
@@ -27,7 +27,7 @@ public class FlightData {
 	/**
 	 * The unique carrier
 	 */
-	private String airlineCarrier;
+	private String airlineId;
 
 	/**
 	 * The origin code
@@ -78,14 +78,14 @@ public class FlightData {
 		setDepTime(new String());
 		setArrTime(new String());
 		setArrDelay(new String());
-		setAirlineCarrier(new String());
+		setAirlineId(new String());
 	}
 
 	@Override
 	public String toString() {
 		String str = null;
 
-		str = "Flight Data: [" + "airlineCarrier = " + airlineCarrier +"flightYear = "
+		str = "Flight Data: [" + "airlineId = " + airlineId +"flightYear = "
 				+ flightYear + ", flightMonth = " + flightMonth
 				+ ", flightDate: " + flightDate + ", origin = " + origin
 				+ ", destination = " + destination + ", departureTime = "
@@ -181,12 +181,12 @@ public class FlightData {
 		this.arrDelay = arrDelay;
 	}
 
-	public String getAirlineCarrier() {
-		return airlineCarrier;
+	public String getAirlineId() {
+		return airlineId;
 	}
 
-	public void setAirlineCarrier(String airlineCarrier) {
-		this.airlineCarrier = airlineCarrier;
+	public void setAirlineId(String airlineId) {
+		this.airlineId = airlineId;
 	}
 
 }

@@ -1,11 +1,8 @@
-package edu.mapred.assign4;
+package edu.mapred.assign4.java;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
-import org.apache.commons.collections.comparators.ComparableComparator;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.examples.SecondarySort.IntPair.Comparator;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
@@ -26,9 +23,15 @@ import org.apache.hadoop.util.GenericOptionsParser;
  */
 public class MonthlyFlightDelay {
 
+	/**
+	 * Mapper class for flight data
+	 * 
+	 * @author arpitm
+	 * 
+	 */
 	public static class FlightDataMapper extends
-			Mapper<Object, Text, FlightDataKey, Text> {
-		// FlightDataParser object
+			Mapper<Object, Text, FlightDataMapperKey, Text> {
+		// parser
 		private FlightDataParser dataParser;
 
 		@Override
@@ -39,79 +42,79 @@ public class MonthlyFlightDelay {
 			setParser(FlightDataParser.getInstance());
 		}
 
+		/**
+		 * function parses the input data and outputs (k,v) pair. k is of type
+		 * FlightDataMapperKey and value is of type Text
+		 */
 		public void map(Object key, Text value, Context context)
 				throws IOException, InterruptedException {
+
 			// Get Flight Data
 			FlightData fData = dataParser.getFlightData(value.toString());
 
-			// Verify if flight is valid
+			// Define Mapper key and value
+			FlightDataMapperKey outKey = null;
+			Text outValue = null;
+
 			if (FlightUtils.isValidFlight(fData)) {
-				// Define the key
-				FlightDataKey outKey = null;
-
-				// Define Value
-				Text outValue = null;
-
-				if (FlightUtils.isFirstFlight(fData)) {
-					outKey = createKey(fData.getDestination(),
-							fData.getFlightDate(), fData.getAirlineCarrier());
-
-					outValue = createValue(FlightConstants.FIRST_FLIGHT,
-							fData.getArrTime(), fData.getArrDelay());
-				} else if (FlightUtils.isSecondFlight(fData)) {
-					outKey = createKey(fData.getDestination(),
-							fData.getFlightDate(), fData.getAirlineCarrier());
-
-					outValue = createValue(FlightConstants.SECOND_FLIGHT,
-							fData.getDepTime(), fData.getArrDelay());
-				}
-
-				// TODO For testing
-				// System.out.println(outKey.toString() + " ---> " + outValue);
+				outKey = createKey(fData.getAirlineId().trim(),
+						fData.getFlightMonth());
+				outValue = createValue(fData.getArrDelay().trim());
 
 				// Emit
 				if ((outKey != null) && (outValue != null)) {
+					// TODO For testing
+					// System.out.println(outKey.toString() + " ---> " +
+					// outValue);
+
 					context.write(outKey, outValue);
 				}
 			}
 		}
 
 		/**
-		 * Function returns the out value for the mapper
+		 * Function returns an value for the map function
 		 * 
-		 * @param f1orf2
-		 * @param arrOrDepTime
 		 * @param arrDelay
 		 * 
-		 * @return Text
+		 * @return Text returnValue
 		 */
-		private Text createValue(String f1orf2, String arrOrDepTime,
-				String arrDelay) {
+		private Text createValue(String arrDelay) {
 			Text returnValue = null;
 
-			if (!isNullString(arrOrDepTime) && !isNullString(arrDelay)) {
-				returnValue = new Text(f1orf2 + FlightConstants.DELIMITER
-						+ arrOrDepTime.trim() + FlightConstants.DELIMITER
-						+ arrDelay.trim());
+			if (!isNullString(arrDelay)) {
+				returnValue = new Text(arrDelay.trim());
 			}
 
 			return returnValue;
 		}
 
-		private FlightDataKey createKey(String dest, String date,
-				String airlineId) {
-			FlightDataKey returnKey = null;
+		/**
+		 * returns a mapper key
+		 * 
+		 * @param airlineId
+		 * @param month
+		 * 
+		 * @return FlightDataMapperKey key
+		 */
+		private FlightDataMapperKey createKey(String airlineId, int month) {
+			FlightDataMapperKey key = null;
 
-			if (!isNullString(dest) && !isNullString(date)
-					&& !isNullString(airlineId)) {
-				returnKey = new FlightDataKey(new Text(dest), new Text(date),
-						new Text(airlineId));
+			if (!isNullString(airlineId) && (month >= 1) && (month <= 12)) {
+				key = new FlightDataMapperKey(airlineId, month);
 			}
-			return returnKey;
+			return key;
 		}
 
+		/**
+		 * Helper function to check is a string is null.
+		 * 
+		 * @param str
+		 * 
+		 * @return boolean
+		 */
 		private boolean isNullString(String str) {
-			if ((str == null) || (str.trim().length() == 0)) {
+			if ((str == null) || (str.length() == 0)) {
 				return true;
 			} else {
 				return false;
@@ -143,178 +146,140 @@ public class MonthlyFlightDelay {
 	}
 
 	/**
-	 * FlightDataPartitioner Class
-	 * <p>
-	 * Partitions the FlightDataMapperKey based on their HashCode. The
-	 * getPartition function returns partition number between 0 and
+	 * Partitions the FlightDataMapperKey based on the HashCode of airlineId.
+	 * The getPartition function returns partition number between 0 and
 	 * numPartitions.
-	 * </p>
 	 * 
 	 * @author arpitm
 	 * 
 	 */
 	public static class FlightDataPartitioner extends
-			Partitioner<FlightDataKey, Text> {
+			Partitioner<FlightDataMapperKey, Text> {
 
 		@Override
-		public int getPartition(FlightDataKey key, Text value, int numPartitions) {
-			int partitionNum = 0;
-			String uniqueCarrier = key.toString().split(" ")[1];
-			
-			//TODO Refine 
-			partitionNum = uniqueCarrier.hashCode();
-
-			// TODO
-			System.out.println("Partition of " + uniqueCarrier + " ---> " + partitionNum);
+		public int getPartition(FlightDataMapperKey key, Text value,
+				int numPartitions) {
+			int partitionNum = (Math.abs(key.getAirlineId().hashCode()) % numPartitions);
 
 			return partitionNum;
 		}
 	}
 
-	public static class FlightDataGroupComparator extends WritableComparator {
-
-		protected FlightDataGroupComparator() {
-			super(FlightDataKey.class, false);			
-		}
-		
-		@Override
-		public int compare(Object a, Object b) {
-			FlightDataKey k1 = (FlightDataKey) a;
-			FlightDataKey k2 = (FlightDataKey) b;
-			
-			int cmpResult = k1.compareTo(k2);
-			
-			return cmpResult;
-		}
-
-	}
-
 	/**
-	 * FlightDataReducer Class
-	 * <p>
-	 * This reducer performs the join operation on the FlightDataMapperKey
-	 * object and outputs the delay for the joint flights.
-	 * </p>
+	 * Groups input keys to the reducer based on the airlineId of the keys.
 	 * 
 	 * @author arpitm
 	 * 
 	 */
-	public static class FlightDataReducer extends
-			Reducer<FlightDataKey, Text, Text, Text> {
-		// List to store all flights in first leg
-		private ArrayList<Text> lstFirstFlights = null;
+	public static class FlightDataGroupComparator extends WritableComparator {
 
-		// List to store all flights in the second leg
-		private ArrayList<Text> lstSecondFlights = null;
-
-		@Override
-		protected void setup(Context context) throws IOException,
-				InterruptedException {
-			super.setup(context);
-			lstFirstFlights = new ArrayList<Text>();
-			lstSecondFlights = new ArrayList<Text>();
+		protected FlightDataGroupComparator() {
+			super(FlightDataMapperKey.class, true);
 		}
 
-		public void reduce(FlightDataKey key, Iterable<Text> values,
-				Context context) throws IOException, InterruptedException,
-				IndexOutOfBoundsException {
-			// Clear lists
-			lstFirstFlights.clear();
-			lstSecondFlights.clear();
+		@Override
+		public int compare(WritableComparable a, WritableComparable b) {
+			FlightDataMapperKey key1 = (FlightDataMapperKey) a;
+			FlightDataMapperKey key2 = (FlightDataMapperKey) b;
 
-			boolean isFirstFlight = false;
-			boolean isSecondFlight = false;
+			return (key1.getAirlineId().compareTo(key2.getAirlineId()));
+		}
+	}
 
-			// Join
+	/**
+	 * Sort comparator class sorts the reducer input keys based on the airlineId
+	 * and the month.
+	 * 
+	 * @author arpitm
+	 * 
+	 */
+	public static class FlightDataSortComparator extends WritableComparator {
+
+		protected FlightDataSortComparator() {
+			super(FlightDataMapperKey.class, true);
+		}
+
+		@Override
+		public int compare(WritableComparable a, WritableComparable b) {
+			FlightDataMapperKey key1 = (FlightDataMapperKey) a;
+			FlightDataMapperKey key2 = (FlightDataMapperKey) b;
+
+			int cmpResult = key1.getAirlineId().compareTo(key2.getAirlineId());
+
+			if (cmpResult == 0) {
+				int m1 = key1.getMonth();
+				int m2 = key2.getMonth();
+
+				cmpResult = FlightDataMapperKey.compareMonths(m1, m2);
+			}
+
+			return cmpResult;
+		}
+	}
+
+	/**
+	 * This reducer computes the average delay for each month for the input
+	 * FlightDataMapperKey.
+	 * 
+	 * @author arpitm
+	 * 
+	 */
+	public static class MonthlyFlightDataReducer extends
+			Reducer<FlightDataMapperKey, Text, Text, Text> {
+
+		public void reduce(FlightDataMapperKey key, Iterable<Text> values,
+				Context context) throws IOException, InterruptedException {
+			// variable to hold total delay for each month
+			double totalDelay = 0.0;
+
+			// variable to hold count value for each month
+			int totalCount = 0;
+
+			// integer array to hold monthly average delay.
+			int[] monthAvgDelay = new int[12];
+
+			// previous month index
+			int prevMonth = 1;
+
 			for (Text value : values) {
-				String[] valueParts = value.toString().split(
-						FlightConstants.DELIMITER);
+				int month = key.getMonth();
 
-				// TODO For testing
-				// System.out.println(value.toString());
+				if (prevMonth != month) {
+					monthAvgDelay[prevMonth - 1] = (int) Math.ceil(totalDelay
+							/ totalCount);
 
-				isFirstFlight = (valueParts[0].equalsIgnoreCase("F") ? true
-						: false);
-				isSecondFlight = (valueParts[0].equalsIgnoreCase("S") ? true
-						: false);
-
-				if (isFirstFlight) {
-					String arrTime = valueParts[1];
-					String arrDelay = valueParts[2];
-					lstFirstFlights.add(new Text(arrTime
-							+ FlightConstants.DELIMITER + arrDelay));
-				} else if (isSecondFlight) {
-					String depTime = valueParts[1];
-					String arrDelay = valueParts[2];
-					lstSecondFlights.add(new Text(depTime
-							+ FlightConstants.DELIMITER + arrDelay));
+					// Reset values
+					totalDelay = 0.0;
+					totalCount = 0;
+					prevMonth = month;
 				}
+
+				totalCount = totalCount + 1;
+
+				float delayMinutes = Float.parseFloat(value.toString());
+				totalDelay += delayMinutes;
 			}
 
-			// Execute our join logic now that the lists are filled
-			executeJoinLogic(context);
-		}
+			// Average delay for last month
+			monthAvgDelay[prevMonth - 1] = (int) Math.ceil(totalDelay
+					/ totalCount);
 
-		@Override
-		protected void cleanup(Context context) throws IOException,
-				InterruptedException {
-			super.cleanup(context);
+			// String builder to hold the value string
+			StringBuilder valueSb = new StringBuilder();
 
-			lstFirstFlights = null;
-			lstSecondFlights = null;
-		}
-
-		/**
-		 * Executes the reducer-side join logic based on the condition
-		 * list1.flight.arrTime < list2.flight.depTime
-		 * 
-		 * @param context
-		 * @throws IOException
-		 * @throws InterruptedException
-		 * @throws NumberFormatException
-		 */
-		private void executeJoinLogic(Context context) throws IOException,
-				InterruptedException, NumberFormatException {
-			int firstFlightArrtime = 0;
-			int secondFlightDepTime = 0;
-			float firstFlightArrDelay = (float) 0.0;
-			float secondFlightArrDelay = (float) 0.0;
-			long totalDelay = (long) 0;
-
-			if (!lstFirstFlights.isEmpty() && !lstSecondFlights.isEmpty()) {
-				for (Text firstFlight : lstFirstFlights) {
-					String[] firstFlightParts = firstFlight.toString().split(
-							FlightConstants.DELIMITER);
-
-					firstFlightArrtime = Integer.parseInt(firstFlightParts[0]);
-					firstFlightArrDelay = Float.parseFloat(firstFlightParts[1]);
-
-					for (Text secondFlight : lstSecondFlights) {
-
-						String[] secondFlightParts = secondFlight.toString()
-								.split(FlightConstants.DELIMITER);
-
-						secondFlightDepTime = Integer
-								.parseInt(secondFlightParts[0]);
-						secondFlightArrDelay = Float
-								.parseFloat(secondFlightParts[1]);
-
-						if ((secondFlightDepTime - firstFlightArrtime) > 0) {
-
-							totalDelay = (long) firstFlightArrDelay
-									+ (long) secondFlightArrDelay;
-
-							// Increment Counters
-							context.getCounter(
-									FlightConstants.AverageFlightDelayCounters.DELAY_SUM)
-									.increment(totalDelay);
-							context.getCounter(
-									FlightConstants.AverageFlightDelayCounters.FREQUENCY)
-									.increment(1);
-						}
-					}
+			// Loop through values to build reducer value string
+			for (int i = 0; i < monthAvgDelay.length; i++) {
+				if (i > 0) {
+					valueSb.append(", ");
 				}
+
+				valueSb.append("(").append(i + 1).append(",")
+						.append(monthAvgDelay[i]).append(")");
 			}
+
+			// Emit
+			context.write(new Text(key.getAirlineId()),
+					new Text(valueSb.toString()));
 		}
 	}
 
@@ -337,46 +302,29 @@ public class MonthlyFlightDelay {
 		// Arguments length check
 		if (otherArgs.length != 2) {
 			System.err
-					.println("Usage: AverageFlightDelay <data-file-path> <output-path>");
-			System.exit(1);
+					.println("Usage: MonthlyFlightDelay <input-file-path> <output-dir-path>");
+			System.exit(2);
 		}
 
 		// Job: Monthly Average Flight Delay Calculation.
-		Job job = new Job(conf, "Average Flight Delay Calculation.");
+		Job job = new Job(conf,
+				"Airline-wise Monthly Average Flight Delay Calculation.");
 		job.setJarByClass(MonthlyFlightDelay.class);
 		job.setMapperClass(FlightDataMapper.class);
 		job.setPartitionerClass(FlightDataPartitioner.class);
-		job.setReducerClass(FlightDataReducer.class);
-		job.setMapOutputKeyClass(Text.class);
+		job.setGroupingComparatorClass(FlightDataGroupComparator.class);
+		job.setSortComparatorClass(FlightDataSortComparator.class);
+		job.setReducerClass(MonthlyFlightDataReducer.class);
+
+		job.setMapOutputKeyClass(FlightDataMapperKey.class);
 		job.setMapOutputValueClass(Text.class);
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(Text.class);
-		job.setNumReduceTasks(FlightConstants.NUM_REDUCE_TASKS);
+		// job.setNumReduceTasks(FlightConstants.NUM_REDUCE_TASKS);
+
 		FileInputFormat.addInputPath(job, new Path(otherArgs[0]));
 		FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
-		job.waitForCompletion(true);
 
-		// Calculate average flight delay once the job is successful
-		if (job.isSuccessful()) {
-			long delaySum = job
-					.getCounters()
-					.findCounter(
-							FlightConstants.AverageFlightDelayCounters.DELAY_SUM)
-					.getValue();
-			long freq = job
-					.getCounters()
-					.findCounter(
-							FlightConstants.AverageFlightDelayCounters.FREQUENCY)
-					.getValue();
-
-			float avgDelay = ((float) delaySum / (float) freq);
-
-			System.out.println("Average flight delay from ORD -> JFK is: "
-					+ avgDelay);
-			System.exit(0);
-		} else {
-			System.out.println("Job " + job.getJobName() + " Failed!");
-			System.exit(1);
-		}
+		System.exit(job.waitForCompletion(true) ? 0 : 1);
 	}
 }

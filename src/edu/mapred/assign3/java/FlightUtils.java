@@ -1,4 +1,4 @@
-package edu.mapred.assign3;
+package edu.mapred.assign3.java;
 
 /**
  * @author arpitm
@@ -69,7 +69,7 @@ public class FlightUtils {
 	private static boolean isOriginOrDestinationValid(FlightData fData) {
 		boolean isValid = false;
 		
-		isValid = (isFirstFlight(fData) || isSecondFlight(fData));
+		isValid = (isFirstFlight(fData) ^ isSecondFlight(fData));
 
 		return isValid;
 	}

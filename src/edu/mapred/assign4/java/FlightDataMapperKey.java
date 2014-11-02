@@ -1,36 +1,33 @@
 /**
  * 
  */
-package edu.mapred.assign4;
+package edu.mapred.assign4.java;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
 
 /**
  * @author arpitm
  * 
  */
-public class FlightDataKey implements WritableComparable<FlightDataKey> {
-	private Text layoverCode;
-	private Text airlineCarrier;
-	private Text flightDate;
+public class FlightDataMapperKey implements
+		WritableComparable<FlightDataMapperKey> {
+	private String airlineId;
+	private int month;
 
-	public FlightDataKey() {
-		set(new Text(), new Text(), new Text());
+	public FlightDataMapperKey() {
 	}
 
-	public FlightDataKey(Text layoverCode, Text flightDate, Text airlineId) {
-		set(layoverCode, flightDate, airlineId);
+	public FlightDataMapperKey(String airlineId, int month) {
+		set(airlineId, month);
 	}
 
-	private void set(Text layoverCode, Text flightDate, Text airlineId) {
-		this.layoverCode = layoverCode;
-		this.airlineCarrier = airlineId;
-		this.flightDate = flightDate;
+	private void set(String airlineId, int month) {
+		this.airlineId = airlineId;
+		this.month = month;
 	}
 
 	/*
@@ -40,9 +37,8 @@ public class FlightDataKey implements WritableComparable<FlightDataKey> {
 	 */
 	@Override
 	public void readFields(DataInput in) throws IOException {
-		layoverCode.readFields(in);
-		flightDate.readFields(in);
-		airlineCarrier.readFields(in);
+		this.airlineId = in.readUTF();
+		this.month = in.readInt();
 	}
 
 	/*
@@ -52,9 +48,8 @@ public class FlightDataKey implements WritableComparable<FlightDataKey> {
 	 */
 	@Override
 	public void write(DataOutput out) throws IOException {
-		layoverCode.write(out);
-		flightDate.write(out);
-		airlineCarrier.write(out);
+		out.writeUTF(this.airlineId);
+		out.writeInt(this.month);
 	}
 
 	/*
@@ -63,16 +58,11 @@ public class FlightDataKey implements WritableComparable<FlightDataKey> {
 	 * @see java.lang.Comparable#compareTo(java.lang.Object)
 	 */
 	@Override
-	public int compareTo(FlightDataKey o) {
-		int cmpResult = layoverCode.compareTo(o.layoverCode);
+	public int compareTo(FlightDataMapperKey key) {
+		int cmpResult = this.airlineId.compareTo(key.airlineId);
 
 		if (cmpResult == 0) {
-			cmpResult = flightDate.compareTo(o.flightDate);
-
-			// TODO
-			// if(cmpResult == 0) {
-			// cmpResult = airlineCarrier.compareTo(o.airlineCarrier);
-			// }
+			cmpResult = compareMonths(this.month, key.getMonth());
 		}
 
 		return cmpResult;
@@ -82,19 +72,56 @@ public class FlightDataKey implements WritableComparable<FlightDataKey> {
 	public boolean equals(Object obj) {
 		boolean isEqual = false;
 
-		if (obj instanceof FlightDataKey) {
-			FlightDataKey k = (FlightDataKey) obj;
-			isEqual = ((layoverCode.equals(k.layoverCode))
-					&& (flightDate.equals(k.flightDate)) && (airlineCarrier
-					.equals(k.airlineCarrier)));
+		if (obj instanceof FlightDataMapperKey) {
+			FlightDataMapperKey key = (FlightDataMapperKey) obj;
+			isEqual = ((this.airlineId.equals(key.airlineId)) && (this.month == key.getMonth()));
 		}
 
 		return isEqual;
 	}
 
+	public static int compareMonths(int m1, int m2) {
+		return ((m1 < m2) ? -1 : ((m1 > m2) ? 1 : 0));
+	}
+
 	@Override
 	public String toString() {
-		return layoverCode.toString() + " " + airlineCarrier.toString() + " "
-				+ flightDate.toString();
+		return this.airlineId.toString() + FlightConstants.DELIMITER
+				+ this.month;
+	}
+
+	/**
+	 * Source: http://zaloni.com/blog/secondary-sorting-hadoop
+	 */
+	@Override
+	public int hashCode() {
+		int resultHash = 1;
+		int prime = 31;
+
+		resultHash = prime * resultHash
+				+ ((this.airlineId != null) ? this.airlineId.hashCode() : 0);
+
+		resultHash = prime * resultHash + this.month;
+
+		return resultHash;
+	}
+
+	/*
+	 * Get and set functions for the key components
+	 */
+	public String getAirlineId() {
+		return this.airlineId;
+	}
+
+	public void setAirlineId(String airlineId) {
+		this.airlineId = airlineId;
+	}
+
+	public int getMonth() {
+		return this.month;
+	}
+
+	public void setMonth(int month) {
+		this.month = month;
 	}
 }

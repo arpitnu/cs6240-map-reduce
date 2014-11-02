@@ -1,4 +1,4 @@
-package edu.mapred.assign4;
+package edu.mapred.assign4.java;
 
 /**
  * @author arpitm
@@ -12,38 +12,12 @@ public class FlightConstants {
 	/**
 	 * Number of reduce tasks
 	 */
-	//TODO
-	public static final int NUM_REDUCE_TASKS = 12;
+	public static final int NUM_REDUCE_TASKS = 20;
 
 	/**
-	 * From year
+	 * The year
 	 */
-	 public static final int FROM_YEAR = 2007;
-
-	/**
-	 * To year
-	 */
-	public static final int TO_YEAR = 2008;
-
-	/**
-	 * From month
-	 */
-	 public static final int FROM_MONTH = 6;
-
-	/**
-	 * To month
-	 */
-	public static final int TO_MONTH = 5;
-
-	/**
-	 * Origin airport code
-	 */
-	public static final String ORIGIN_CODE = "ORD";
-
-	/**
-	 * Destination airport code
-	 */
-	 public static final String DESTINATION_CODE = "JFK";
+	public static final int YEAR = 2008;
 
 	/**
 	 * The delimiter used in Mappers
@@ -56,7 +30,7 @@ public class FlightConstants {
 	public static final int INDEX_FLIGHT_YEAR = 0;
 	public static final int INDEX_FLIGHT_MONTH = 2;
 	public static final int INDEX_FLIGHT_DATE = 5;
-	public static final int INDEX_UNIQUE_CARRIER = 6;
+	public static final int INDEX_UNIQUE_CARRIER = 7;
 	public static final int INDEX_ORIGIN = 11;
 	public static final int INDEX_DESTINATION = 17;
 	public static final int INDEX_DEP_TIME = 24;
@@ -64,23 +38,4 @@ public class FlightConstants {
 	public static final int INDEX_ARR_DELAY_MINUTES = 37;
 	public static final int INDEX_CANCELLED = 41;
 	public static final int INDEX_DIVERTED = 43;
-	
-	/**
-	 * First flight descriptor
-	 */
-	public static final String FIRST_FLIGHT = "F1";
-	
-	/**
-	 * Second flight descriptor
-	 */
-	public static final String SECOND_FLIGHT = "F2";
-	
-	/**
-	 * Enum for global counters to calculate average flight delay
-	 */
-	//TODO
-	public enum AverageFlightDelayCounters {
-		DELAY_SUM,
-		FREQUENCY
-	};
 }

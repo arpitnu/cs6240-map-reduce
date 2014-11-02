@@ -1,4 +1,4 @@
-package edu.mapred.assign3;
+package edu.mapred.assign3.java;
 
 /**
  * @author arpitm
