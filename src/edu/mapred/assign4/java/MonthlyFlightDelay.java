@@ -114,7 +114,7 @@ public class MonthlyFlightDelay {
 		 * @return boolean
 		 */
 		private boolean isNullString(String str) {
-			if ((str == null) || (str.length() == 0)) {
+			if ((str == null) || ("".equals(str)) || (str.length() == 0)) {
 				return true;
 			} else {
 				return false;
@@ -230,10 +230,10 @@ public class MonthlyFlightDelay {
 		public void reduce(FlightDataMapperKey key, Iterable<Text> values,
 				Context context) throws IOException, InterruptedException {
 			// variable to hold total delay for each month
-			double totalDelay = 0.0;
+			double monthTotalDelay = 0.0;
 
 			// variable to hold count value for each month
-			int totalCount = 0;
+			int monthTotalCount = 0;
 
 			// integer array to hold monthly average delay.
 			int[] monthAvgDelay = new int[12];
@@ -245,24 +245,24 @@ public class MonthlyFlightDelay {
 				int month = key.getMonth();
 
 				if (prevMonth != month) {
-					monthAvgDelay[prevMonth - 1] = (int) Math.ceil(totalDelay
-							/ totalCount);
+					monthAvgDelay[prevMonth - 1] = (int) Math.ceil(monthTotalDelay
+							/ monthTotalCount);
 
 					// Reset values
-					totalDelay = 0.0;
-					totalCount = 0;
+					monthTotalDelay = 0.0;
+					monthTotalCount = 0;
 					prevMonth = month;
 				}
 
-				totalCount = totalCount + 1;
+				monthTotalCount = monthTotalCount + 1;
 
 				float delayMinutes = Float.parseFloat(value.toString());
-				totalDelay += delayMinutes;
+				monthTotalDelay += delayMinutes;
 			}
 
 			// Average delay for last month
-			monthAvgDelay[prevMonth - 1] = (int) Math.ceil(totalDelay
-					/ totalCount);
+			monthAvgDelay[prevMonth - 1] = (int) Math.ceil(monthTotalDelay
+					/ monthTotalCount);
 
 			// String builder to hold the value string
 			StringBuilder valueSb = new StringBuilder();

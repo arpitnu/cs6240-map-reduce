@@ -1,6 +1,8 @@
 package edu.mapred.assign4.java;
 
 /**
+ * Util class for Map-Reduce job. Provides helper functions.
+ * 
  * @author arpitm
  * 
  */

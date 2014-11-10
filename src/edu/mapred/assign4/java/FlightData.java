@@ -9,35 +9,21 @@ package edu.mapred.assign4.java;
  * 
  */
 public class FlightData {
-	/**
-	 * The flight date
-	 */
-	private String flightDate;
-
-	/**
-	 * The flight month
-	 */
-	private int flightMonth;
 
 	/**
 	 * The flight year
 	 */
 	private int flightYear;
+	
+	/**
+	 * The month
+	 */
+	private int flightMonth;
 
 	/**
 	 * The unique carrier
 	 */
 	private String airlineId;
-
-	/**
-	 * The origin code
-	 */
-	private String origin;
-
-	/**
-	 * The destination code
-	 */
-	private String destination;
 
 	/**
 	 * Is flight cancelled
@@ -50,16 +36,6 @@ public class FlightData {
 	private boolean isDiverted;
 
 	/**
-	 * Departure Time
-	 */
-	private String depTime;
-
-	/**
-	 * Arrival Time
-	 */
-	private String arrTime;
-
-	/**
 	 * Arrival delay in minutes
 	 */
 	private String arrDelay;
@@ -68,15 +44,10 @@ public class FlightData {
 	 * Default constructor
 	 */
 	public FlightData() {
-		setFlightDate(new String());
-		setFlightMonth(0);
 		setFlightYear(0);
+		setFlightMonth(0);
 		setCancelled(false);
 		setDiverted(false);
-		setOrigin(new String());
-		setDestination(new String());
-		setDepTime(new String());
-		setArrTime(new String());
 		setArrDelay(new String());
 		setAirlineId(new String());
 	}
@@ -85,12 +56,9 @@ public class FlightData {
 	public String toString() {
 		String str = null;
 
-		str = "Flight Data: [" + "airlineId = " + airlineId +"flightYear = "
-				+ flightYear + ", flightMonth = " + flightMonth
-				+ ", flightDate: " + flightDate + ", origin = " + origin
-				+ ", destination = " + destination + ", departureTime = "
-				+ depTime + ", arrivalTime = " + arrTime
-				+ ", arrDelayMinutes = " + arrDelay + ", isCancelled = "
+		str = "Flight Data: [" + "airlineId = " + airlineId + "flightYear = "
+				+ flightYear + ", arrDelayMinutes = " + arrDelay
+				+ ", isCancelled = "
 				+ ((isCancelled == false) ? "false" : "true")
 				+ ", isDiverted = "
 				+ ((isDiverted == false) ? "false" : "true") + "]";
@@ -101,21 +69,6 @@ public class FlightData {
 	/*
 	 * Getters & Setters
 	 */
-	public String getFlightDate() {
-		return flightDate;
-	}
-
-	public void setFlightDate(String flightDate) {
-		this.flightDate = flightDate;
-	}
-
-	public int getFlightMonth() {
-		return flightMonth;
-	}
-
-	public void setFlightMonth(int flightMonth) {
-		this.flightMonth = flightMonth;
-	}
 
 	public int getFlightYear() {
 		return flightYear;
@@ -123,22 +76,6 @@ public class FlightData {
 
 	public void setFlightYear(int flightYear) {
 		this.flightYear = flightYear;
-	}
-
-	public String getOrigin() {
-		return origin;
-	}
-
-	public void setOrigin(String origin) {
-		this.origin = origin;
-	}
-
-	public String getDestination() {
-		return destination;
-	}
-
-	public void setDestination(String destination) {
-		this.destination = destination;
 	}
 
 	public boolean isCancelled() {
@@ -157,22 +94,6 @@ public class FlightData {
 		this.isDiverted = isDiverted;
 	}
 
-	public String getDepTime() {
-		return depTime;
-	}
-
-	public void setDepTime(String depTime) {
-		this.depTime = depTime;
-	}
-
-	public String getArrTime() {
-		return arrTime;
-	}
-
-	public void setArrTime(String arrTime) {
-		this.arrTime = arrTime;
-	}
-
 	public String getArrDelay() {
 		return arrDelay;
 	}
@@ -187,6 +108,14 @@ public class FlightData {
 
 	public void setAirlineId(String airlineId) {
 		this.airlineId = airlineId;
+	}
+
+	public int getFlightMonth() {
+		return flightMonth;
+	}
+
+	public void setFlightMonth(int flightMonth) {
+		this.flightMonth = flightMonth;
 	}
 
 }

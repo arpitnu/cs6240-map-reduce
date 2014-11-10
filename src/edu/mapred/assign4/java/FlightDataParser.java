@@ -69,18 +69,13 @@ public class FlightDataParser {
 				.parseInt(values[FlightConstants.INDEX_FLIGHT_YEAR].trim()));
 		fData.setFlightMonth(Integer
 				.parseInt(values[FlightConstants.INDEX_FLIGHT_MONTH].trim()));
-		fData.setFlightDate(values[FlightConstants.INDEX_FLIGHT_DATE].trim());
-		fData.setOrigin(values[FlightConstants.INDEX_ORIGIN].trim());
-		fData.setDestination(values[FlightConstants.INDEX_DESTINATION].trim());
-		fData.setDepTime(values[FlightConstants.INDEX_DEP_TIME].trim());
-		fData.setArrTime(values[FlightConstants.INDEX_ARR_TIME].trim());
 		fData.setArrDelay(values[FlightConstants.INDEX_ARR_DELAY_MINUTES]
 				.trim());
 		fData.setCancelled((values[FlightConstants.INDEX_CANCELLED].trim()
 				.equals("0.00")) ? false : true);
 		fData.setDiverted((values[FlightConstants.INDEX_DIVERTED].trim()
 				.equals("0.00")) ? false : true);
-		fData.setAirlineId(values[FlightConstants.INDEX_UNIQUE_CARRIER].trim());
+		fData.setAirlineId(values[FlightConstants.INDEX_AIRLINE_ID].trim());
 
 		return fData;
 	}

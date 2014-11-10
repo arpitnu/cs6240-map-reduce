@@ -30,7 +30,7 @@ public class FlightConstants {
 	public static final int INDEX_FLIGHT_YEAR = 0;
 	public static final int INDEX_FLIGHT_MONTH = 2;
 	public static final int INDEX_FLIGHT_DATE = 5;
-	public static final int INDEX_UNIQUE_CARRIER = 7;
+	public static final int INDEX_AIRLINE_ID = 7;
 	public static final int INDEX_ORIGIN = 11;
 	public static final int INDEX_DESTINATION = 17;
 	public static final int INDEX_DEP_TIME = 24;
