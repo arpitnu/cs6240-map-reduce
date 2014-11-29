@@ -1,4 +1,4 @@
-package edu.mapreduce.finalproject;
+package edu.mapred.finalproject;
 
 import java.io.IOException;
 import java.io.StringReader;

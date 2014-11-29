@@ -1,4 +1,4 @@
-package edu.mapreduce.finalproject;
+package edu.mapred.finalproject;
 
 /**
  * @author arpitm

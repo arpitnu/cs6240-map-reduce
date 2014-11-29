@@ -1,4 +1,4 @@
-package edu.mapreduce.finalproject;
+package edu.mapred.finalproject;
 
 /**
  * @author arpitm
@@ -18,6 +18,36 @@ public class FlightConstants {
 	 * The date
 	 */
 	public static final String GRAPH_DATE = "2014-01-01";
+	
+	/**
+	 * Start day
+	 */
+	public static final int START_DAY = 01;
+	
+	/**
+	 * End day
+	 */
+	public static final int END_DAY = 01;
+	
+	/**
+	 * Start month
+	 */
+	public static final int START_MONTH = 01;
+	
+	/**
+	 * End month
+	 */
+	public static final int END_MONTH = 01;
+	
+	/**
+	 * Start year
+	 */
+	public static final int START_YEAR = 2014;
+	
+	/**
+	 * End year
+	 */
+	public static final int END_YEAR = 2014;
 
 	/**
 	 * The delimiter used in Mappers
@@ -39,4 +69,12 @@ public class FlightConstants {
 	public static final int INDEX_CANCELLED = 41;
 	public static final int INDEX_DIVERTED = 43;
 	public static final int INDEX_ACTUAL_ELAPSED_TIME = 45;
+	
+	/**
+	 * Counters
+	 */
+	public static enum FlightDataGraphCounters {
+		ITERATION_COUNTER,
+		ITERATION_STOP_COUNTER
+	};
 }

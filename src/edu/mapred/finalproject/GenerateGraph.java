@@ -1,7 +1,7 @@
 /**
  * This map-reduce job constructs the graph 
  */
-package edu.mapreduce.finalproject;
+package edu.mapred.finalproject;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -71,9 +71,6 @@ public class GenerateGraph {
 							edgesMap.put(source, destMap);
 						}
 					} else {
-						// HashMap<String, HashMap<String, Integer>> sourceMap =
-						// new
-						// HashMap<String, HashMap<String, Integer>>();
 						HashMap<String, Integer> destMap = new HashMap<String, Integer>();
 						destMap.put(dest, actualElapsedTime);
 						edgesMap.put(source, destMap);
