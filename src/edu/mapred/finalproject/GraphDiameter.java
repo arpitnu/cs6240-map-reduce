@@ -1,5 +1,5 @@
 /**
- * 
+ * Program calculates the diameter of the Flight Data graph, i.e, the longest shortest path.
  */
 package edu.mapred.finalproject;
 
