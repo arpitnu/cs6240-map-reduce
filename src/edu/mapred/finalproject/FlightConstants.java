@@ -14,6 +14,7 @@ public class FlightConstants {
 	 */
 	public static final int NUM_REDUCE_TASKS = 20;
 
+	// TODO
 	/**
 	 * The date
 	 */
@@ -22,32 +23,32 @@ public class FlightConstants {
 	/**
 	 * Start day
 	 */
-	public static final int START_DAY = 01;
+	public static final String START_DAY = "01";
 	
 	/**
 	 * End day
 	 */
-	public static final int END_DAY = 01;
+	public static final String END_DAY = "01";
 	
 	/**
 	 * Start month
 	 */
-	public static final int START_MONTH = 01;
+	public static final String START_MONTH = "01";
 	
 	/**
 	 * End month
 	 */
-	public static final int END_MONTH = 01;
+	public static final String END_MONTH = "01";
 	
 	/**
 	 * Start year
 	 */
-	public static final int START_YEAR = 2014;
+	public static final String START_YEAR = "2014";
 	
 	/**
 	 * End year
 	 */
-	public static final int END_YEAR = 2014;
+	public static final String END_YEAR = "2014";
 
 	/**
 	 * The delimiter used in Mappers
