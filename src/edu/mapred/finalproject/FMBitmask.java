@@ -94,6 +94,19 @@ public class FMBitmask implements Comparable<FMBitmask> {
 			System.exit(-2);
 		}
 	}
+	
+	/**
+	 * Perform bitwise OR operation with input bitmask
+	 * 
+	 * @param fmb
+	 */
+	public void bitwiseOrWith(FMBitmask fmb) {
+		int[] fmbBitMasks = fmb.getBitMasks();
+		
+		for(int i = 0; i < FMB_NUM_MASKS; i++) {
+			this.bitMasks[i] = this.bitMasks[i] | fmbBitMasks[i];
+		}
+	}
 
 	/*
 	 * Get & Set functions

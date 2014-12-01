@@ -13,6 +13,11 @@ public class FlightConstants {
 	 * Number of reduce tasks
 	 */
 	public static final int NUM_REDUCE_TASKS = 20;
+	
+	/**
+	 * Total number of nodes in FlightData. Calculated from NodesCount.java 
+	 */
+	public static final int TOTAL_NUM_NODES = 341;
 
 	// TODO
 	/**
