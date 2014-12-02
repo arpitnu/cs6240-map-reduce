@@ -224,8 +224,8 @@ public class GraphDiameter {
 				String src = null;
 				String dest = null;
 
-				Text k = null;
-				Text v = null;
+				// Text k = null;
+				// Text v = null;
 
 				if (inputType.equals("BC")) {
 					// Check if iteration 0
@@ -233,28 +233,35 @@ public class GraphDiameter {
 							"bitmaskCommand");
 					if (bitmaskCommand.equals("BC")) {
 						src = lineParts[1];
-						k = new Text(src);
-						v = new Text(inputType + FlightConstants.DELIMITER);
+						Text k = new Text(src);
+						Text v = new Text(inputType + FlightConstants.DELIMITER);
+
+						// Emit
+						context.write(k, v);
 					}
 				} else if (inputType.equals("B")) {
 					src = lineParts[1];
 					String bitMaskStr = lineParts[2];
-					k = new Text(src);
-					v = new Text(inputType + FlightConstants.DELIMITER
+					Text k = new Text(src);
+					Text v = new Text(inputType + FlightConstants.DELIMITER
 							+ bitMaskStr);
+
+					// Emit
+					context.write(k, v);
 				} else if (inputType.equals("R")) {
 					src = lineParts[1];
 					dest = lineParts[2];
-					k = new Text(dest);
-					v = new Text(inputType + FlightConstants.DELIMITER + src);
+					Text k = new Text(dest);
+					Text v = new Text(inputType + FlightConstants.DELIMITER
+							+ src);
+
+					// Emit
+					context.write(k, v);
 				} else {
 					System.err
 							.println("HADI Stage 1 Mapper: Input Type Unrecognized!");
 					System.exit(-2);
 				}
-
-				// Emit
-				context.write(k, v);
 			}
 		}
 	}
@@ -263,6 +270,10 @@ public class GraphDiameter {
 
 		@Override
 		public int getPartition(Text key, Text value, int numPartitions) {
+			// TODO
+			System.out.println("HADIStage1Partitioner: Current Node ID = "
+					+ key.toString());
+
 			String nodeId = key.toString();
 			return nodeId.hashCode() % numPartitions;
 		}
@@ -494,6 +505,11 @@ public class GraphDiameter {
 				Text k = new Text("N at hop " + currHop + " is");
 				IntWritable v = new IntWritable(allNodeCurrHopN);
 
+				// Update counter
+				context.getCounter(
+						FlightConstants.FlightDataGraphCounters.PREV_HOP_N_COUNTER)
+						.setValue((long) allNodeCurrHopN);
+
 				// Emit
 				context.write(k, v);
 			}
@@ -581,11 +597,13 @@ public class GraphDiameter {
 
 			int iteration = 1;
 			boolean hasConverged = false;
+			int prevHopN = 0;
+			int currHopN = 0;
 
-			while (hasConverged) {
+			while (hasConverged == false) {
 				// TODO
-				System.out
-						.print("--------Iteration: " + iteration + "--------");
+				System.out.print("-------- Iteration: " + iteration
+						+ " --------");
 
 				// HADI Stage 1: Invert Edge, match bitmasks to node id.
 				Configuration hadiStage1Conf = new Configuration();
@@ -605,7 +623,7 @@ public class GraphDiameter {
 				hadiStage1Job.setJarByClass(GraphDiameter.class);
 				hadiStage1Job.setMapperClass(HADIStage1Mapper.class);
 				hadiStage1Job.setReducerClass(HADIStage1Reducer.class);
-				hadiStage1Job.setPartitionerClass(HADIStage1Partitioner.class);
+				// hadiStage1Job.setPartitionerClass(HADIStage1Partitioner.class);
 				hadiStage1Job
 						.setGroupingComparatorClass(HADIStage1GroupComparator.class);
 				hadiStage1Job.setMapOutputKeyClass(Text.class);
@@ -626,15 +644,17 @@ public class GraphDiameter {
 				FileSystem.getLocal(conf).delete(hadiStage1OutputPath, true);
 
 				if (iteration == 1) {
-					Path hadiStage1InputPath = job1OutputPath;
+					Path hadiStage1InputPath = new Path(job1OutputPathStr
+							+ "/part-r-00000");
 					FileInputFormat.addInputPath(hadiStage1Job,
 							hadiStage1InputPath);
 				} else {
 					// TODO
-					Path hadiStage1InputPath1 = job1OutputPath;
+					Path hadiStage1InputPath1 = new Path(job1OutputPathStr
+							+ "/part-r-00000");
 					Path hadiStage1InputPath2 = new Path(dirPath + "/output/"
 							+ currentDate + "/iteration-" + (iteration - 1)
-							+ "/hadi-stage2/");
+							+ "/hadi-stage2/part-r-00000");
 					FileInputFormat.addInputPath(hadiStage1Job,
 							hadiStage1InputPath1);
 					FileInputFormat.addInputPath(hadiStage1Job,
@@ -646,7 +666,7 @@ public class GraphDiameter {
 				if (hadiS1CompletionStatus == 0) {
 					// TODO
 					System.out.println("Job: " + hadiStage1JobName
-							+ " completed successfully!");
+							+ " completed successfully for iteration " + iteration);
 					// System.exit(0);
 
 					// HADI Stage 2: Merge bitmasks for each node.
@@ -661,8 +681,8 @@ public class GraphDiameter {
 					hadiStage2Job.setJarByClass(GraphDiameter.class);
 					hadiStage2Job.setMapperClass(HADIStage2Mapper.class);
 					hadiStage2Job.setReducerClass(HADIStage2Reducer.class);
-					hadiStage2Job
-							.setPartitionerClass(HADIStage2Partitioner.class);
+					// hadiStage2Job
+					// .setPartitionerClass(HADIStage2Partitioner.class);
 					hadiStage2Job
 							.setGroupingComparatorClass(HADIStage2GroupComparator.class);
 					hadiStage2Job.setMapOutputKeyClass(Text.class);
@@ -694,7 +714,7 @@ public class GraphDiameter {
 					if (hadiS2CompletionStatus == 0) {
 						// TODO
 						System.out.println("Job: " + hadiStage2JobName
-								+ " completed successfully!");
+								+ " completed successfully for iteration " + iteration);
 						// System.exit(-2);
 
 						// HADI Stage 3: Calculation of neighborhood function
@@ -712,8 +732,8 @@ public class GraphDiameter {
 								hadiStage3JobName);
 						hadiStage3Job.setJarByClass(GraphDiameter.class);
 						hadiStage3Job.setMapperClass(HADIStage3Mapper.class);
-						hadiStage3Job
-								.setPartitionerClass(HADIStage3Partitioner.class);
+						// hadiStage3Job
+						// .setPartitionerClass(HADIStage3Partitioner.class);
 						hadiStage3Job.setReducerClass(HADIStage3Reducer.class);
 						hadiStage3Job.setMapOutputKeyClass(Text.class);
 						hadiStage3Job.setMapOutputValueClass(IntWritable.class);
@@ -744,45 +764,61 @@ public class GraphDiameter {
 						if (hadiS3CompletionStatus == 0) {
 							// TODO
 							System.out.println("Job: " + hadiStage3JobName
-									+ " completed successfully!");
-							System.exit(-2);
+									+ " completed successfully for iteration " + iteration);
+							// System.exit(-2);
+
+							currHopN = (int) hadiStage3Job
+									.getCounters()
+									.findCounter(
+											FlightConstants.FlightDataGraphCounters.PREV_HOP_N_COUNTER)
+									.getValue();
+
+							// TODO
+							System.out.println("Current hop N = " + currHopN);
+							System.out.println("Prev hop N = " + prevHopN);
+
+							//TODO < or <= ?
+							if (currHopN <= prevHopN) {
+								// TODO
+								System.out.println("Has converged");
+
+								hasConverged = true;
+							} else {
+								iteration++;
+								prevHopN = currHopN;
+							}
+
 						} else {
 							System.err
 									.println("JOB STATUS MESSAGE: HADI Stage 3 Job for date "
-											+ currentDate + " failed!");
+											+ currentDate
+											+ " failed at iteration "
+											+ iteration);
 							System.exit(-2);
 						}
 					} else {
 						System.err
 								.println("JOB STATUS MESSAGE: HADI Stage 2 Job for date "
-										+ currentDate + " failed!");
+										+ currentDate
+										+ " failed at iteration "
+										+ iteration);
 						System.exit(-2);
 					}
 				} else {
 					System.err
 							.println("JOB STATUS MESSAGE: HADI Stage 1 Job for date "
-									+ currentDate + " failed!");
+									+ currentDate
+									+ " failed at iteration "
+									+ iteration);
 					System.exit(-2);
 
 				}
 			}
 		} else {
-			System.err.println("JOB STATUS MESSAGE: Job 1 for date "
-					+ currentDate + " failed!");
+			System.err
+					.println("JOB STATUS MESSAGE: Graph generation job for date "
+							+ currentDate + " failed!");
 			System.exit(-2);
 		}
-
 	}
-	// Initialize counters
-	// job.getCounters()
-	// .findCounter(
-	// FlightConstants.FlightDataGraphCounters.ITERATION_COUNTER)
-	// .setValue(0);
-	// job.getCounters()
-	// .findCounter(
-	// FlightConstants.FlightDataGraphCounters.ITERATION_STOP_COUNTER)
-	// .setValue(0);
-
-	// }
-
 }

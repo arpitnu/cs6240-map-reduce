@@ -80,7 +80,6 @@ public class FlightConstants {
 	 * Counters
 	 */
 	public static enum FlightDataGraphCounters {
-		ITERATION_COUNTER,
-		ITERATION_STOP_COUNTER
+		PREV_HOP_N_COUNTER
 	};
 }
