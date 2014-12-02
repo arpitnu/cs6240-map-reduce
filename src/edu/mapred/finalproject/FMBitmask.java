@@ -11,18 +11,18 @@ public class FMBitmask implements Comparable<FMBitmask> {
 	/**
 	 * Number of bytes in FMBitmask
 	 */
-	private static final int FMB_NUM_MASKS = 24;
+	private static final int NUM_MASKS = 24;
 
 	/**
 	 * The bitmasks array. 6 bytes ->
 	 */
-	private int[] bitMasks = new int[FMB_NUM_MASKS];
+	private int[] bitMasks = new int[NUM_MASKS];
 
 	/**
 	 * Default constructor
 	 */
 	public FMBitmask() {
-		for (int i = 0; i < FMB_NUM_MASKS; i++) {
+		for (int i = 0; i < NUM_MASKS; i++) {
 			this.bitMasks[i] = (int) 0;
 		}
 	}
@@ -37,7 +37,7 @@ public class FMBitmask implements Comparable<FMBitmask> {
 
 		String[] fmbSplits = fmbStr.split(" ");
 
-		for (int i = 0; i < (FMB_NUM_MASKS - 1); ++i) {
+		for (int i = 0; i < (NUM_MASKS - 1); ++i) {
 			fmb.bitMasks[i] = Integer.parseInt(fmbSplits[i]);
 		}
 	}
@@ -46,8 +46,8 @@ public class FMBitmask implements Comparable<FMBitmask> {
 	public String toString() {
 		StringBuilder retSb = new StringBuilder();
 
-		for (int i = 0; i < FMB_NUM_MASKS; i++) {
-			if (i == (FMB_NUM_MASKS - 1)) {
+		for (int i = 0; i < NUM_MASKS; i++) {
+			if (i == (NUM_MASKS - 1)) {
 				retSb.append(this.bitMasks[i]);
 			} else {
 				retSb.append(this.bitMasks[i]).append(" ");
@@ -65,7 +65,7 @@ public class FMBitmask implements Comparable<FMBitmask> {
 
 		int[] fmbMasks = fmb.getBitMasks();
 
-		for (int i = 0; i < FMB_NUM_MASKS; i++) {
+		for (int i = 0; i < NUM_MASKS; i++) {
 			if (this.bitMasks[i] > fmbMasks[i]) {
 				cmp = 1;
 				break;
@@ -81,8 +81,8 @@ public class FMBitmask implements Comparable<FMBitmask> {
 	}
 	
 	public void setBit(int bit) {
-		if(bit < (FMB_NUM_MASKS * 16)) {
-			int bmIndex = (FMB_NUM_MASKS - 1 - (bit / 16));
+		if(bit < (NUM_MASKS * 16)) {
+			int bmIndex = (NUM_MASKS - 1 - (bit / 16));
 			int bmBitIndex = (char) (bit % 16);
 			
 			int bm = this.bitMasks[bmIndex];
@@ -103,9 +103,26 @@ public class FMBitmask implements Comparable<FMBitmask> {
 	public void bitwiseOrWith(FMBitmask fmb) {
 		int[] fmbBitMasks = fmb.getBitMasks();
 		
-		for(int i = 0; i < FMB_NUM_MASKS; i++) {
+		for(int i = 0; i < NUM_MASKS; i++) {
 			this.bitMasks[i] = this.bitMasks[i] | fmbBitMasks[i];
 		}
+	}
+	
+	public int getSetBitsCount() {
+		int numSetBits = 0;
+		
+		for(int i = 0; i < NUM_MASKS; i++) {
+			int currMask = this.bitMasks[i];
+			int lsbMask = 1;
+			
+			for(int j = 0; j < 16; j++) {
+				if(((currMask >> j) & lsbMask) == (int) 1) {
+					numSetBits += 1;
+				}
+			}
+		}
+		
+		return numSetBits;
 	}
 
 	/*
@@ -118,5 +135,7 @@ public class FMBitmask implements Comparable<FMBitmask> {
 	public void setBitMasks(int[] bitMasks) {
 		this.bitMasks = bitMasks;
 	}
+
+	
 
 }

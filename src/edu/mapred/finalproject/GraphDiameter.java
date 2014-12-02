@@ -282,24 +282,22 @@ public class GraphDiameter {
 
 	public static class HADIStage1Reducer extends
 			Reducer<Text, Text, NullWritable, Text> {
-		ArrayList<String> listSources = null;
+		ArrayList<String> listDestNodes = null;
 		FMBitmask fmb = null;
-		String destNode = null;
+		String sourceNode = null;
 
 		@Override
 		protected void setup(Context context) throws IOException,
 				InterruptedException {
 			super.setup(context);
-			destNode = new String();
-			listSources = new ArrayList<String>();
+			sourceNode = new String();
+			listDestNodes = new ArrayList<String>();
 		}
 
 		@Override
 		protected void reduce(Text key, Iterable<Text> values, Context context)
 				throws IOException, InterruptedException {
-			destNode = key.toString();
-			// NullWritable k = NullWritable.get();
-			// Text v = null;
+			sourceNode = key.toString();
 
 			for (Text valueText : values) {
 				String[] valueSplits = valueText.toString().split(
@@ -312,8 +310,8 @@ public class GraphDiameter {
 					fmb = new FMBitmask(fmbStr);
 				} else if (inputType.equals("R")) {
 					String node = valueSplits[1];
-					if (!listSources.contains(node)) {
-						listSources.add(node);
+					if (!listDestNodes.contains(node)) {
+						listDestNodes.add(node);
 					}
 				} else {
 					System.err
@@ -329,23 +327,23 @@ public class GraphDiameter {
 			NullWritable key = NullWritable.get();
 			Text value = null;
 
-			if (!listSources.isEmpty()) {
-				for (String source : listSources) {
+			if (!listDestNodes.isEmpty()) {
+				for (String source : listDestNodes) {
 					value = new Text("B" + FlightConstants.DELIMITER + source
 							+ FlightConstants.DELIMITER + fmb.toString());
 					context.write(key, value);
 				}
 			}
 
-			if (!destNode.isEmpty() && !listSources.contains(destNode)) {
-				value = new Text("B" + FlightConstants.DELIMITER + destNode
+			if (!sourceNode.isEmpty() && !listDestNodes.contains(sourceNode)) {
+				value = new Text("B" + FlightConstants.DELIMITER + sourceNode
 						+ FlightConstants.DELIMITER + fmb.toString());
 				context.write(key, value);
 			}
 
-			listSources = null;
+			listDestNodes = null;
 			fmb = null;
-			destNode = null;
+			sourceNode = null;
 			super.cleanup(context);
 		}
 	}
@@ -384,7 +382,7 @@ public class GraphDiameter {
 		}
 
 	}
-	
+
 	public static class HADIStage2GroupComparator extends WritableComparator {
 
 		protected HADIStage2GroupComparator() {
@@ -405,8 +403,8 @@ public class GraphDiameter {
 			String node = key.toString();
 
 			// Create a new FMBitmask for the node for the current iteration
-			FMBitmask nodeNewFmb = new FMBitmask();
-			nodeNewFmb
+			FMBitmask currHopBitmask = new FMBitmask();
+			currHopBitmask
 					.setBit(node.hashCode() % FlightConstants.TOTAL_NUM_NODES);
 
 			String inputType = null;
@@ -417,19 +415,42 @@ public class GraphDiameter {
 				inputType = valueSplits[0];
 
 				// Old bitmask for the node
-				FMBitmask nodeOldFmb = new FMBitmask(valueSplits[1]);
+				FMBitmask prevHopBitmask = new FMBitmask(valueSplits[1]);
 
 				// Bitwise OR with new FMBitmask
-				nodeNewFmb.bitwiseOrWith(nodeOldFmb);
+				currHopBitmask.bitwiseOrWith(prevHopBitmask);
 			}
 
 			// Define key and value to emit
 			NullWritable k = NullWritable.get();
 			Text v = new Text(inputType + FlightConstants.DELIMITER + node
-					+ FlightConstants.DELIMITER + nodeNewFmb.toString());
+					+ FlightConstants.DELIMITER + currHopBitmask.toString());
 
 			// Emit
 			context.write(k, v);
+		}
+	}
+
+	public static class HADIStage3Mapper extends
+			Mapper<Object, Text, Text, Text> {
+		@Override
+		protected void map(Object key, Text value, Context context)
+				throws IOException, InterruptedException {
+			if(value != null) {
+				String[] lineSplits = value.toString().split(FlightConstants.DELIMITER);
+				String inputType = lineSplits[0];
+				
+				if(inputType.equals("B")) {
+					String node = lineSplits[1];
+					String bitmaskStr = lineSplits[2];
+					
+					FMBitmask currHopBitmask = new FMBitmask(bitmaskStr);
+					int b = currHopBitmask.getSetBitsCount();
+					
+					// Calculate N(h)
+					
+				}
+			}
 		}
 	}
 
@@ -492,13 +513,15 @@ public class GraphDiameter {
 		job1.setMapOutputValueClass(Text.class);
 		job1.setOutputKeyClass(NullWritable.class);
 		job1.setOutputValueClass(Text.class);
-		Path job1InputPath = new Path(dirPath + "/input/Jan-2014.csv");
-		Path job1OutputPath = new Path(dirPath + "/output/" + currentDate
-				+ "/job1/");
+		String job1InputPathStr = dirPath + "/input/Jan-2014.csv";
+		String job1OutputPathStr = dirPath + "/output/" + currentDate
+				+ "/job1/";
+		Path job1InputPath = new Path(job1InputPathStr);
+		Path job1OutputPath = new Path(job1OutputPathStr);
 
 		// TODO
-		System.out.println("Deleting old output directory " + dirPath
-				+ "/output/" + currentDate + "/job1/");
+		System.out
+				.println("Deleting old output directory " + job1OutputPathStr);
 		FileSystem.getLocal(conf).delete(job1OutputPath, true);
 
 		FileInputFormat.addInputPath(job1, job1InputPath);
@@ -510,13 +533,13 @@ public class GraphDiameter {
 			System.out.println("Job " + job1Name + " completed successfully!");
 			// System.exit(0);
 
-			int iteration = 0;
+			int iteration = 1;
 			boolean hasConverged = false;
 
 			// HADI Stage 1: Invert Edge, match bitmasks to node id.
 			Configuration hadiStage1Conf = new Configuration();
 
-			if (0 == iteration) {
+			if (1 == iteration) {
 				hadiStage1Conf.set("bitmaskCommand", "BC");
 			} else {
 				hadiStage1Conf.set("bitmaskCommand", "B");
@@ -538,8 +561,9 @@ public class GraphDiameter {
 			hadiStage1Job.setOutputValueClass(Text.class);
 			hadiStage1Job.setOutputKeyClass(NullWritable.class);
 			hadiStage1Job.setOutputValueClass(Text.class);
-			Path hadiStage1OutputPath = new Path(dirPath + "/output/"
-					+ currentDate + "/iteration-" + iteration + "/hadi-stage1/");
+			String hadiStage1OutputPathStr = dirPath + "/output/" + currentDate
+					+ "/iteration-" + iteration + "/hadi-stage1/";
+			Path hadiStage1OutputPath = new Path(hadiStage1OutputPathStr);
 			FileOutputFormat.setOutputPath(hadiStage1Job, hadiStage1OutputPath);
 
 			// TODO
@@ -584,25 +608,32 @@ public class GraphDiameter {
 				hadiStage2Job.setMapperClass(HADIStage2Mapper.class);
 				hadiStage2Job.setReducerClass(HADIStage2Reducer.class);
 				hadiStage2Job.setPartitionerClass(HADIStage2Partitioner.class);
-				hadiStage2Job.setGroupingComparatorClass(HADIStage2GroupComparator.class);
+				hadiStage2Job
+						.setGroupingComparatorClass(HADIStage2GroupComparator.class);
 				hadiStage2Job.setMapOutputKeyClass(Text.class);
 				hadiStage2Job.setOutputValueClass(Text.class);
 				hadiStage2Job.setOutputKeyClass(NullWritable.class);
 				hadiStage2Job.setOutputValueClass(Text.class);
-				Path hadiStage2InputPath = new Path(hadiStage1OutputPath.getName() + "/part-r-00000");
-				Path hadiStage2OutputPath = new Path(dirPath + "/output/"
-					+ currentDate + "/iteration-" + iteration + "/hadi-stage2/");
-				
+				String hadiStage2InputPathStr = hadiStage1OutputPathStr
+						+ "/part-r-00000";
+				Path hadiStage2InputPath = new Path(hadiStage2InputPathStr);
+				String hadiStage2OutputPathStr = dirPath + "/output/"
+						+ currentDate + "/iteration-" + iteration
+						+ "/hadi-stage2/";
+				Path hadiStage2OutputPath = new Path(hadiStage2OutputPathStr);
+
 				// TODO
-				System.out.println("Deleting old output directory " + dirPath + "/output/"
-						+ currentDate + "/iteration-" + iteration + "/hadi-stage2/");
-				FileSystem.getLocal(conf).delete(hadiStage1OutputPath, true);
-				
-				FileInputFormat.addInputPath(hadiStage2Job, hadiStage2InputPath);
-				FileOutputFormat.setOutputPath(hadiStage2Job, hadiStage2OutputPath);
-				int hadiS2CompletionStatus = (hadiStage2Job.waitForCompletion(true) ? 0
-						: 1);
-				
+				System.out.println("Deleting old output directory "
+						+ hadiStage2OutputPathStr);
+				FileSystem.getLocal(conf).delete(hadiStage2OutputPath, true);
+
+				FileInputFormat
+						.addInputPath(hadiStage2Job, hadiStage2InputPath);
+				FileOutputFormat.setOutputPath(hadiStage2Job,
+						hadiStage2OutputPath);
+				int hadiS2CompletionStatus = (hadiStage2Job
+						.waitForCompletion(true) ? 0 : 1);
+
 				if (hadiS2CompletionStatus == 0) {
 					// TODO
 					System.out.println("Job: " + hadiStage2JobName
@@ -610,10 +641,18 @@ public class GraphDiameter {
 					System.exit(-2);
 				}
 			} else {
+				// TODO
 				System.err
 						.println("JOB STATUS MESSAGE: HADI Stage 1 Job for date "
 								+ currentDate + " failed!");
 				System.exit(-2);
+
+				// HADI Stage 3: Calculation of neighborhood function N(h)
+				Configuration hadiStage2Conf = new Configuration();
+				String hadiStage3JobName = "HADI Stage 3";
+
+				// TODO
+				System.out.println("Starting Job: " + hadiStage3JobName);
 			}
 
 		} else {
@@ -622,7 +661,6 @@ public class GraphDiameter {
 			System.exit(-2);
 		}
 	}
-
 	// Initialize counters
 	// job.getCounters()
 	// .findCounter(
