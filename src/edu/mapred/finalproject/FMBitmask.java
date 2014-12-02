@@ -33,12 +33,12 @@ public class FMBitmask implements Comparable<FMBitmask> {
 	 * @param fmbStr
 	 */
 	public FMBitmask(String fmbStr) {
-		FMBitmask fmb = new FMBitmask();
+//		FMBitmask fmb = new FMBitmask();
 
 		String[] fmbSplits = fmbStr.split(" ");
 
-		for (int i = 0; i < (NUM_MASKS - 1); ++i) {
-			fmb.bitMasks[i] = Integer.parseInt(fmbSplits[i]);
+		for (int i = 0; i < NUM_MASKS; i++) {
+			this.bitMasks[i] = Integer.parseInt(fmbSplits[i]);
 		}
 	}
 

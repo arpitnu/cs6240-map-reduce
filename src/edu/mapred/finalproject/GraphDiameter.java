@@ -11,6 +11,7 @@ import java.util.Set;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
@@ -328,8 +329,8 @@ public class GraphDiameter {
 			Text value = null;
 
 			if (!listDestNodes.isEmpty()) {
-				for (String source : listDestNodes) {
-					value = new Text("B" + FlightConstants.DELIMITER + source
+				for (String destNode : listDestNodes) {
+					value = new Text("B" + FlightConstants.DELIMITER + destNode
 							+ FlightConstants.DELIMITER + fmb.toString());
 					context.write(key, value);
 				}
@@ -404,8 +405,8 @@ public class GraphDiameter {
 
 			// Create a new FMBitmask for the node for the current iteration
 			FMBitmask currHopBitmask = new FMBitmask();
-			currHopBitmask
-					.setBit(node.hashCode() % FlightConstants.TOTAL_NUM_NODES);
+			currHopBitmask.setBit(node.hashCode()
+					% FlightConstants.TOTAL_NUM_NODES);
 
 			String inputType = null;
 
@@ -432,24 +433,69 @@ public class GraphDiameter {
 	}
 
 	public static class HADIStage3Mapper extends
-			Mapper<Object, Text, Text, Text> {
+			Mapper<Object, Text, Text, IntWritable> {
 		@Override
 		protected void map(Object key, Text value, Context context)
 				throws IOException, InterruptedException {
-			if(value != null) {
-				String[] lineSplits = value.toString().split(FlightConstants.DELIMITER);
+			if (value != null) {
+				String[] lineSplits = value.toString().split(
+						FlightConstants.DELIMITER);
 				String inputType = lineSplits[0];
-				
-				if(inputType.equals("B")) {
+
+				// Key & value of mapper
+				Text k = null;
+				IntWritable v = null;
+
+				if (inputType.equals("B")) {
 					String node = lineSplits[1];
 					String bitmaskStr = lineSplits[2];
-					
+
 					FMBitmask currHopBitmask = new FMBitmask(bitmaskStr);
 					int b = currHopBitmask.getSetBitsCount();
-					
+
 					// Calculate N(h)
-					
+					int nodeCurrhopN = b;
+
+					k = new Text("N");
+					v = new IntWritable(nodeCurrhopN);
+
+					// Emit
+					context.write(k, v);
 				}
+			}
+		}
+	}
+
+	public static class HADIStage3Partitioner extends
+			Partitioner<Text, IntWritable> {
+
+		@Override
+		public int getPartition(Text key, IntWritable value, int numPartitions) {
+			return 0;
+		}
+
+	}
+
+	public static class HADIStage3Reducer extends
+			Reducer<Text, IntWritable, Text, IntWritable> {
+		@Override
+		protected void reduce(Text key, Iterable<IntWritable> values,
+				Context context) throws IOException, InterruptedException {
+			// Aggregate all nodes Neighborhood functions.
+			int allNodeCurrHopN = 0;
+			String currHop = context.getConfiguration().get("currHop");
+
+			if (key.toString().equals("N")) {
+				for (IntWritable value : values) {
+					allNodeCurrHopN += value.get();
+				}
+
+				// Key and value for emit
+				Text k = new Text("N at hop " + currHop + " is");
+				IntWritable v = new IntWritable(allNodeCurrHopN);
+
+				// Emit
+				context.write(k, v);
 			}
 		}
 	}
@@ -536,130 +582,196 @@ public class GraphDiameter {
 			int iteration = 1;
 			boolean hasConverged = false;
 
-			// HADI Stage 1: Invert Edge, match bitmasks to node id.
-			Configuration hadiStage1Conf = new Configuration();
-
-			if (1 == iteration) {
-				hadiStage1Conf.set("bitmaskCommand", "BC");
-			} else {
-				hadiStage1Conf.set("bitmaskCommand", "B");
-			}
-
-			String hadiStage1JobName = "HADI Stage 1";
-
-			// TODO
-			System.out.println("Starting Job: " + job1Name);
-
-			Job hadiStage1Job = new Job(hadiStage1Conf, hadiStage1JobName);
-			hadiStage1Job.setJarByClass(GraphDiameter.class);
-			hadiStage1Job.setMapperClass(HADIStage1Mapper.class);
-			hadiStage1Job.setReducerClass(HADIStage1Reducer.class);
-			hadiStage1Job.setPartitionerClass(HADIStage1Partitioner.class);
-			hadiStage1Job
-					.setGroupingComparatorClass(HADIStage1GroupComparator.class);
-			hadiStage1Job.setMapOutputKeyClass(Text.class);
-			hadiStage1Job.setOutputValueClass(Text.class);
-			hadiStage1Job.setOutputKeyClass(NullWritable.class);
-			hadiStage1Job.setOutputValueClass(Text.class);
-			String hadiStage1OutputPathStr = dirPath + "/output/" + currentDate
-					+ "/iteration-" + iteration + "/hadi-stage1/";
-			Path hadiStage1OutputPath = new Path(hadiStage1OutputPathStr);
-			FileOutputFormat.setOutputPath(hadiStage1Job, hadiStage1OutputPath);
-
-			// TODO
-			System.out.println("Deleting old output directory " + dirPath
-					+ "/output/" + currentDate + "/iteration-" + iteration
-					+ "/hadi-stage1/");
-			FileSystem.getLocal(conf).delete(hadiStage1OutputPath, true);
-
-			if (0 == iteration) {
-				Path hadiStage1InputPath = job1OutputPath;
-				FileInputFormat
-						.addInputPath(hadiStage1Job, hadiStage1InputPath);
-			} else {
+			while (hasConverged) {
 				// TODO
-				Path hadiStage1InputPath1 = job1OutputPath;
-				Path hadiStage1InputPath2 = new Path(dirPath + "/output/"
-						+ currentDate + "/iteration-" + (iteration - 1)
-						+ "/hadi-stage2/");
-				FileInputFormat.addInputPath(hadiStage1Job,
-						hadiStage1InputPath1);
-				FileInputFormat.addInputPath(hadiStage1Job,
-						hadiStage1InputPath2);
-			}
+				System.out
+						.print("--------Iteration: " + iteration + "--------");
 
-			int hadiS1CompletionStatus = (hadiStage1Job.waitForCompletion(true) ? 0
-					: 1);
-			if (hadiS1CompletionStatus == 0) {
-				// TODO
-				System.out.println("Job: " + hadiStage1JobName
-						+ " completed successfully!");
-				// System.exit(0);
+				// HADI Stage 1: Invert Edge, match bitmasks to node id.
+				Configuration hadiStage1Conf = new Configuration();
 
-				// HADI Stage 2: Merge bitmasks for each node.
-				Configuration hadiStage2Conf = new Configuration();
-				String hadiStage2JobName = "HADI Stage 2";
-
-				// TODO
-				System.out.println("Starting Job: " + hadiStage2JobName);
-
-				Job hadiStage2Job = new Job(hadiStage2Conf, hadiStage2JobName);
-				hadiStage2Job.setJarByClass(GraphDiameter.class);
-				hadiStage2Job.setMapperClass(HADIStage2Mapper.class);
-				hadiStage2Job.setReducerClass(HADIStage2Reducer.class);
-				hadiStage2Job.setPartitionerClass(HADIStage2Partitioner.class);
-				hadiStage2Job
-						.setGroupingComparatorClass(HADIStage2GroupComparator.class);
-				hadiStage2Job.setMapOutputKeyClass(Text.class);
-				hadiStage2Job.setOutputValueClass(Text.class);
-				hadiStage2Job.setOutputKeyClass(NullWritable.class);
-				hadiStage2Job.setOutputValueClass(Text.class);
-				String hadiStage2InputPathStr = hadiStage1OutputPathStr
-						+ "/part-r-00000";
-				Path hadiStage2InputPath = new Path(hadiStage2InputPathStr);
-				String hadiStage2OutputPathStr = dirPath + "/output/"
-						+ currentDate + "/iteration-" + iteration
-						+ "/hadi-stage2/";
-				Path hadiStage2OutputPath = new Path(hadiStage2OutputPathStr);
-
-				// TODO
-				System.out.println("Deleting old output directory "
-						+ hadiStage2OutputPathStr);
-				FileSystem.getLocal(conf).delete(hadiStage2OutputPath, true);
-
-				FileInputFormat
-						.addInputPath(hadiStage2Job, hadiStage2InputPath);
-				FileOutputFormat.setOutputPath(hadiStage2Job,
-						hadiStage2OutputPath);
-				int hadiS2CompletionStatus = (hadiStage2Job
-						.waitForCompletion(true) ? 0 : 1);
-
-				if (hadiS2CompletionStatus == 0) {
-					// TODO
-					System.out.println("Job: " + hadiStage2JobName
-							+ " completed successfully!");
-					System.exit(-2);
+				if (1 == iteration) {
+					hadiStage1Conf.set("bitmaskCommand", "BC");
+				} else {
+					hadiStage1Conf.set("bitmaskCommand", "B");
 				}
-			} else {
-				// TODO
-				System.err
-						.println("JOB STATUS MESSAGE: HADI Stage 1 Job for date "
-								+ currentDate + " failed!");
-				System.exit(-2);
 
-				// HADI Stage 3: Calculation of neighborhood function N(h)
-				Configuration hadiStage2Conf = new Configuration();
-				String hadiStage3JobName = "HADI Stage 3";
+				String hadiStage1JobName = "HADI Stage 1";
 
 				// TODO
-				System.out.println("Starting Job: " + hadiStage3JobName);
+				System.out.println("Starting Job: " + job1Name);
+
+				Job hadiStage1Job = new Job(hadiStage1Conf, hadiStage1JobName);
+				hadiStage1Job.setJarByClass(GraphDiameter.class);
+				hadiStage1Job.setMapperClass(HADIStage1Mapper.class);
+				hadiStage1Job.setReducerClass(HADIStage1Reducer.class);
+				hadiStage1Job.setPartitionerClass(HADIStage1Partitioner.class);
+				hadiStage1Job
+						.setGroupingComparatorClass(HADIStage1GroupComparator.class);
+				hadiStage1Job.setMapOutputKeyClass(Text.class);
+				hadiStage1Job.setMapOutputValueClass(Text.class);
+				hadiStage1Job.setOutputKeyClass(NullWritable.class);
+				hadiStage1Job.setOutputValueClass(Text.class);
+				String hadiStage1OutputPathStr = dirPath + "/output/"
+						+ currentDate + "/iteration-" + iteration
+						+ "/hadi-stage1/";
+				Path hadiStage1OutputPath = new Path(hadiStage1OutputPathStr);
+				FileOutputFormat.setOutputPath(hadiStage1Job,
+						hadiStage1OutputPath);
+
+				// TODO
+				System.out.println("Deleting old output directory " + dirPath
+						+ "/output/" + currentDate + "/iteration-" + iteration
+						+ "/hadi-stage1/");
+				FileSystem.getLocal(conf).delete(hadiStage1OutputPath, true);
+
+				if (iteration == 1) {
+					Path hadiStage1InputPath = job1OutputPath;
+					FileInputFormat.addInputPath(hadiStage1Job,
+							hadiStage1InputPath);
+				} else {
+					// TODO
+					Path hadiStage1InputPath1 = job1OutputPath;
+					Path hadiStage1InputPath2 = new Path(dirPath + "/output/"
+							+ currentDate + "/iteration-" + (iteration - 1)
+							+ "/hadi-stage2/");
+					FileInputFormat.addInputPath(hadiStage1Job,
+							hadiStage1InputPath1);
+					FileInputFormat.addInputPath(hadiStage1Job,
+							hadiStage1InputPath2);
+				}
+
+				int hadiS1CompletionStatus = (hadiStage1Job
+						.waitForCompletion(true) ? 0 : 1);
+				if (hadiS1CompletionStatus == 0) {
+					// TODO
+					System.out.println("Job: " + hadiStage1JobName
+							+ " completed successfully!");
+					// System.exit(0);
+
+					// HADI Stage 2: Merge bitmasks for each node.
+					Configuration hadiStage2Conf = new Configuration();
+					String hadiStage2JobName = "HADI Stage 2";
+
+					// TODO
+					System.out.println("Starting Job: " + hadiStage2JobName);
+
+					Job hadiStage2Job = new Job(hadiStage2Conf,
+							hadiStage2JobName);
+					hadiStage2Job.setJarByClass(GraphDiameter.class);
+					hadiStage2Job.setMapperClass(HADIStage2Mapper.class);
+					hadiStage2Job.setReducerClass(HADIStage2Reducer.class);
+					hadiStage2Job
+							.setPartitionerClass(HADIStage2Partitioner.class);
+					hadiStage2Job
+							.setGroupingComparatorClass(HADIStage2GroupComparator.class);
+					hadiStage2Job.setMapOutputKeyClass(Text.class);
+					hadiStage2Job.setMapOutputValueClass(Text.class);
+					hadiStage2Job.setOutputKeyClass(NullWritable.class);
+					hadiStage2Job.setOutputValueClass(Text.class);
+					String hadiStage2InputPathStr = hadiStage1OutputPathStr
+							+ "/part-r-00000";
+					Path hadiStage2InputPath = new Path(hadiStage2InputPathStr);
+					String hadiStage2OutputPathStr = dirPath + "/output/"
+							+ currentDate + "/iteration-" + iteration
+							+ "/hadi-stage2/";
+					Path hadiStage2OutputPath = new Path(
+							hadiStage2OutputPathStr);
+
+					// TODO
+					System.out.println("Deleting old output directory "
+							+ hadiStage2OutputPathStr);
+					FileSystem.getLocal(conf)
+							.delete(hadiStage2OutputPath, true);
+
+					FileInputFormat.addInputPath(hadiStage2Job,
+							hadiStage2InputPath);
+					FileOutputFormat.setOutputPath(hadiStage2Job,
+							hadiStage2OutputPath);
+					int hadiS2CompletionStatus = (hadiStage2Job
+							.waitForCompletion(true) ? 0 : 1);
+
+					if (hadiS2CompletionStatus == 0) {
+						// TODO
+						System.out.println("Job: " + hadiStage2JobName
+								+ " completed successfully!");
+						// System.exit(-2);
+
+						// HADI Stage 3: Calculation of neighborhood function
+						// N(h)
+						Configuration hadiStage3Conf = new Configuration();
+						hadiStage3Conf.set("currHop",
+								Integer.toString(iteration));
+						String hadiStage3JobName = "HADI Stage 3";
+
+						// TODO
+						System.out
+								.println("Starting Job: " + hadiStage3JobName);
+
+						Job hadiStage3Job = new Job(hadiStage3Conf,
+								hadiStage3JobName);
+						hadiStage3Job.setJarByClass(GraphDiameter.class);
+						hadiStage3Job.setMapperClass(HADIStage3Mapper.class);
+						hadiStage3Job
+								.setPartitionerClass(HADIStage3Partitioner.class);
+						hadiStage3Job.setReducerClass(HADIStage3Reducer.class);
+						hadiStage3Job.setMapOutputKeyClass(Text.class);
+						hadiStage3Job.setMapOutputValueClass(IntWritable.class);
+						hadiStage3Job.setOutputKeyClass(Text.class);
+						hadiStage3Job.setOutputValueClass(IntWritable.class);
+						String hadiStage3InputPathStr = hadiStage2OutputPathStr;
+						Path hadiStage3InputPath = new Path(
+								hadiStage3InputPathStr + "/part-r-00000");
+						String hadiStage3OutputPathStr = dirPath + "/output/"
+								+ currentDate + "/iteration-" + iteration
+								+ "/hadi-stage3/";
+						Path hadiStage3OutputPath = new Path(
+								hadiStage3OutputPathStr);
+
+						// TODO
+						System.out.println("Deleting old output directory "
+								+ hadiStage3OutputPathStr);
+						FileSystem.getLocal(conf).delete(hadiStage3OutputPath,
+								true);
+
+						FileInputFormat.addInputPath(hadiStage3Job,
+								hadiStage3InputPath);
+						FileOutputFormat.setOutputPath(hadiStage3Job,
+								hadiStage3OutputPath);
+						int hadiS3CompletionStatus = (hadiStage3Job
+								.waitForCompletion(true) ? 0 : 1);
+
+						if (hadiS3CompletionStatus == 0) {
+							// TODO
+							System.out.println("Job: " + hadiStage3JobName
+									+ " completed successfully!");
+							System.exit(-2);
+						} else {
+							System.err
+									.println("JOB STATUS MESSAGE: HADI Stage 3 Job for date "
+											+ currentDate + " failed!");
+							System.exit(-2);
+						}
+					} else {
+						System.err
+								.println("JOB STATUS MESSAGE: HADI Stage 2 Job for date "
+										+ currentDate + " failed!");
+						System.exit(-2);
+					}
+				} else {
+					System.err
+							.println("JOB STATUS MESSAGE: HADI Stage 1 Job for date "
+									+ currentDate + " failed!");
+					System.exit(-2);
+
+				}
 			}
-
 		} else {
 			System.err.println("JOB STATUS MESSAGE: Job 1 for date "
 					+ currentDate + " failed!");
 			System.exit(-2);
 		}
+
 	}
 	// Initialize counters
 	// job.getCounters()
