@@ -40,6 +40,11 @@ public class FlightData {
 	private boolean isCancelled;
 
 	/**
+	 * Is flight diverted
+	 */
+	private boolean isDiverted;
+
+	/**
 	 * Actual elapsed time of flight
 	 */
 	private int actualElapsedTime;
@@ -52,6 +57,7 @@ public class FlightData {
 		setFlightMonth(0);
 		setFlightYear(0);
 		setCancelled(false);
+		setDiverted(false);
 		setOrigin(new String());
 		setDestination(new String());
 		setActualElapsedTime(actualElapsedTime);
@@ -65,7 +71,8 @@ public class FlightData {
 				+ ", flightMonth = " + flightMonth + ", flightDate: "
 				+ flightDate + ", origin = " + origin + ", destination = "
 				+ destination + ", actualElapsedTime = " + actualElapsedTime
-				+ ((isCancelled == false) ? "no" : "yes") + ", isDiverted = ";
+				+ ((isCancelled == false) ? "no" : "yes") + ", isDiverted = "
+				+ ((isDiverted == false) ? "false" : "true") + "]";
 
 		return str;
 	}
@@ -119,6 +126,14 @@ public class FlightData {
 
 	public void setCancelled(boolean isCancelled) {
 		this.isCancelled = isCancelled;
+	}
+
+	public boolean isDiverted() {
+		return isDiverted;
+	}
+
+	public void setDiverted(boolean isDiverted) {
+		this.isDiverted = isDiverted;
 	}
 
 	public int getActualElapsedTime() {

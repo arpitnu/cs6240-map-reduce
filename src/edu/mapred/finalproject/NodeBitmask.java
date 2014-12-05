@@ -7,7 +7,7 @@ package edu.mapred.finalproject;
  * @author arpitm
  * 
  */
-public class FMBitmask implements Comparable<FMBitmask> {
+public class NodeBitmask implements Comparable<NodeBitmask> {
 	/**
 	 * Number of bytes in FMBitmask
 	 */
@@ -21,7 +21,7 @@ public class FMBitmask implements Comparable<FMBitmask> {
 	/**
 	 * Default constructor
 	 */
-	public FMBitmask() {
+	public NodeBitmask() {
 		for (int i = 0; i < NUM_MASKS; i++) {
 			this.bitMasks[i] = (int) 0;
 		}
@@ -30,15 +30,15 @@ public class FMBitmask implements Comparable<FMBitmask> {
 	/**
 	 * Creates a new FMBitmask object from the input string 
 	 * 
-	 * @param fmbStr
+	 * @param nbStr
 	 */
-	public FMBitmask(String fmbStr) {
-//		FMBitmask fmb = new FMBitmask();
+	public NodeBitmask(String nbStr) {
+//		FMBitmask nb = new FMBitmask();
 
-		String[] fmbSplits = fmbStr.split(" ");
+		String[] nbSplits = nbStr.split(" ");
 
 		for (int i = 0; i < NUM_MASKS; i++) {
-			this.bitMasks[i] = Integer.parseInt(fmbSplits[i]);
+			this.bitMasks[i] = Integer.parseInt(nbSplits[i]);
 		}
 	}
 
@@ -60,16 +60,16 @@ public class FMBitmask implements Comparable<FMBitmask> {
 	}
 
 	@Override
-	public int compareTo(FMBitmask fmb) {
+	public int compareTo(NodeBitmask nb) {
 		int cmp = 0;
 
-		int[] fmbMasks = fmb.getBitMasks();
+		int[] nbMasks = nb.getBitMasks();
 
 		for (int i = 0; i < NUM_MASKS; i++) {
-			if (this.bitMasks[i] > fmbMasks[i]) {
+			if (this.bitMasks[i] > nbMasks[i]) {
 				cmp = 1;
 				break;
-			} else if (this.bitMasks[i] < fmbMasks[i]) {
+			} else if (this.bitMasks[i] < nbMasks[i]) {
 				cmp = -1;
 				break;
 			} else {
@@ -98,13 +98,13 @@ public class FMBitmask implements Comparable<FMBitmask> {
 	/**
 	 * Perform bitwise OR operation with input bitmask
 	 * 
-	 * @param fmb
+	 * @param nb
 	 */
-	public void bitwiseOrWith(FMBitmask fmb) {
-		int[] fmbBitMasks = fmb.getBitMasks();
+	public void bitwiseOrWith(NodeBitmask nb) {
+		int[] nbBitMasks = nb.getBitMasks();
 		
 		for(int i = 0; i < NUM_MASKS; i++) {
-			this.bitMasks[i] = this.bitMasks[i] | fmbBitMasks[i];
+			this.bitMasks[i] = this.bitMasks[i] | nbBitMasks[i];
 		}
 	}
 	

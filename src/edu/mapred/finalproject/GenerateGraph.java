@@ -25,7 +25,7 @@ import org.apache.hadoop.util.GenericOptionsParser;
  */
 public class GenerateGraph {
 	public static class GraphMapper extends Mapper<Object, Text, Text, Text> {
-		// Hashmap
+		// HashMap
 		HashMap<String, HashMap<String, Integer>> edgesMap = null;
 
 		// Flight data parser
@@ -47,14 +47,18 @@ public class GenerateGraph {
 
 			if (fData != null) {
 
-				String source = fData.getOrigin();
-				String dest = fData.getDestination();
-				String flightDate = fData.getFlightDate();
-				boolean iscancelled = fData.isCancelled();
-				int actualElapsedTime = fData.getActualElapsedTime();
+				String currentDate = context.getConfiguration().get("currentDate");
+				
+				// TODO
+				// if (flightDate.equals(FlightConstants.GRAPH_DATE)
+				// && (iscancelled == false)) {
+				if (FlightUtils.filterDateWithoutDiversionCheck(fData, currentDate)) {
+					String source = fData.getOrigin();
+					String dest = fData.getDestination();
+					String flightDate = fData.getFlightDate();
+					boolean isCancelled = fData.isCancelled();
+					int actualElapsedTime = fData.getActualElapsedTime();
 
-				if (flightDate.equals(FlightConstants.GRAPH_DATE)
-						&& (iscancelled == false)) {
 					if (edgesMap.containsKey(source)) {
 						HashMap<String, Integer> destMap = edgesMap.get(source);
 

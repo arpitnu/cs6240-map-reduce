@@ -75,6 +75,8 @@ public class FlightDataParser {
 		String dest = values[FlightConstants.INDEX_DESTINATION].trim();
 		boolean isCancelled = (values[FlightConstants.INDEX_CANCELLED].trim()
 				.equals("0.00")) ? false : true;
+		boolean isDiverted = (values[FlightConstants.INDEX_DIVERTED].trim()
+				.equals("0.00")) ? false : true;
 		String actualElapsedTimeStr = values[FlightConstants.INDEX_ACTUAL_ELAPSED_TIME]
 				.trim();
 
@@ -93,6 +95,7 @@ public class FlightDataParser {
 			fData.setOrigin(origin);
 			fData.setDestination(dest);
 			fData.setCancelled(isCancelled);
+			fData.setDiverted(isDiverted);
 			fData.setActualElapsedTime(actualElapsedTime);
 		}
 
